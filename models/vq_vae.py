@@ -22,14 +22,10 @@ class VectorQuantizer(nn.Module):
         self.embedding.weight.data.uniform_(-1 / self.K, 1 / self.K)
 
     def forward(self, latents: Tensor) -> Tensor:
-        latents = latents.permute(0, 2, 3, 1).contiguous()  # [B x D x H x W] -> [B x H x W x D]
-        latents_shape = latents.shape
-        flat_latents = latents.view(-1, self.D)  # [BHW x D]
-
         # Compute L2 distance between latents and embedding weights
-        dist = torch.sum(flat_latents ** 2, dim=1, keepdim=True) + \
+        dist = torch.sum(latents ** 2, dim=1, keepdim=True) + \
                torch.sum(self.embedding.weight ** 2, dim=1) - \
-               2 * torch.matmul(flat_latents, self.embedding.weight.t())  # [BHW x K]
+               2 * torch.matmul(latents, self.embedding.weight.t())  # [BHW x K]
 
         # Get the encoding that has the min distance
         encoding_inds = torch.argmin(dist, dim=1).unsqueeze(1)  # [BHW, 1]
@@ -41,7 +37,6 @@ class VectorQuantizer(nn.Module):
 
         # Quantize the latents
         quantized_latents = torch.matmul(encoding_one_hot, self.embedding.weight)  # [BHW, D]
-        quantized_latents = quantized_latents.view(latents_shape)  # [B x H x W x D]
 
         # Compute the VQ Losses
         commitment_loss = F.mse_loss(quantized_latents.detach(), latents)
@@ -52,7 +47,7 @@ class VectorQuantizer(nn.Module):
         # Add the residue back to the latents
         quantized_latents = latents + (quantized_latents - latents).detach()
 
-        return quantized_latents.permute(0, 3, 1, 2).contiguous(), vq_loss  # [B x D x H x W]
+        return quantized_latents, vq_loss 
 
 class ResidualLayer(nn.Module):
 
@@ -188,7 +183,14 @@ class VQVAE(BaseVAE):
 
     def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
         encoding = self.encode(input)[0]
-        quantized_inputs, vq_loss = self.vq_layer(encoding)
+        encoding = encoding.permute(0, 2, 3, 1).contiguous()  # [B x D x H x W] -> [B x H x W x D]
+        latents_shape = encoding.shape
+        flat_latents = encoding.view(-1, self.D)  # [BHW x D]
+
+        quantized_inputs, vq_loss = self.vq_layer(flat_latents)
+        quantized_inputs = quantized_inputs.view(latents_shape)  # [BHW x D] -> [B x H x W x D]
+        quantized_inputs = quantized_inputs.permute(0, 3, 2, 1).contiguous()  # [B x H x W x D] -> [B x D x H x W]
+
         return [self.decode(quantized_inputs), input, vq_loss]
 
     def loss_function(self,
