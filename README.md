@@ -1,5 +1,7 @@
 # Pytorch VAE
 
+_Work in Progress_
+
 A stripped down fork of [https://github.com/AntixK/PyTorch-VAE](https://github.com/AntixK/PyTorch-VAE). For a more complete package allong with results of the implementation check out the original repo.
 
 ---
