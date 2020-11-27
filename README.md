@@ -18,7 +18,7 @@ a quick and simple working example for many of the cool VAE models out there.
 ## Installation
 
 ```bash
-git clone https://github.com/AntixK/PyTorch-VAE
+git clone https://github.com/threewisemonkeys-as/PyTorch-VAE.git
 cd PyTorch-VAE
 pip install -r requirements.txt
 ```
