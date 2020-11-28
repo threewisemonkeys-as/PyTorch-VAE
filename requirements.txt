@@ -4,3 +4,4 @@ test-tube
 torch>=1.5.0
 torchsummary
 torchvision
+matplotlib
