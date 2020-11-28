@@ -3,7 +3,7 @@ from torch import nn
 from torch.nn import functional as F
 
 from .base import BaseVAE
-from .types_ import *
+from typing import Optional, List
 
 
 class BetaVAE(BaseVAE):
@@ -32,7 +32,7 @@ class BetaVAE(BaseVAE):
         self.beta = beta
         self.gamma = gamma
         self.loss_type = loss_type
-        self.C_max = torch.Tensor([max_capacity])
+        self.C_max = torch.torch.Tensor([max_capacity])
         self.C_stop_iter = Capacity_max_iter
 
         modules = []
@@ -100,12 +100,12 @@ class BetaVAE(BaseVAE):
             nn.Tanh(),
         )
 
-    def encode(self, input: Tensor) -> List[Tensor]:
+    def encode(self, input: torch.Tensor) -> List[torch.Tensor]:
         """
         Encodes the input by passing through the encoder network
         and returns the latent codes.
-        :param input: (Tensor) Input tensor to encoder [N x C x H x W]
-        :return: (Tensor) List of latent codes
+        :param input: (torch.Tensor) Input tensor to encoder [N x C x H x W]
+        :return: (torch.Tensor) List of latent codes
         """
         result = self.encoder(input)
         result = torch.flatten(result, start_dim=1)
@@ -117,26 +117,26 @@ class BetaVAE(BaseVAE):
 
         return [mu, log_var]
 
-    def decode(self, z: Tensor) -> Tensor:
+    def decode(self, z: torch.Tensor) -> torch.Tensor:
         result = self.decoder_input(z)
         result = result.view(-1, 512, 2, 2)
         result = self.decoder(result)
         result = self.final_layer(result)
         return result
 
-    def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
+    def reparameterize(self, mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
         """
         Will a single z be enough ti compute the expectation
         for the loss??
-        :param mu: (Tensor) Mean of the latent Gaussian
-        :param logvar: (Tensor) Standard deviation of the latent Gaussian
+        :param mu: (torch.Tensor) Mean of the latent Gaussian
+        :param logvar: (torch.Tensor) Standard deviation of the latent Gaussian
         :return:
         """
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
         return eps * std + mu
 
-    def forward(self, input: Tensor, **kwargs) -> Tensor:
+    def forward(self, input: torch.Tensor, **kwargs) -> torch.Tensor:
         mu, log_var = self.encode(input)
         z = self.reparameterize(mu, log_var)
         return [self.decode(z), input, mu, log_var]
@@ -168,13 +168,13 @@ class BetaVAE(BaseVAE):
 
         return {"loss": loss, "Reconstruction_Loss": recons_loss, "KLD": kld_loss}
 
-    def sample(self, num_samples: int, current_device: int, **kwargs) -> Tensor:
+    def sample(self, num_samples: int, current_device: int, **kwargs) -> torch.Tensor:
         """
         Samples from the latent space and return the corresponding
         image space map.
         :param num_samples: (Int) Number of samples
         :param current_device: (Int) Device to run the model
-        :return: (Tensor)
+        :return: (torch.Tensor)
         """
         z = torch.randn(num_samples, self.latent_dim)
 
@@ -183,11 +183,11 @@ class BetaVAE(BaseVAE):
         samples = self.decode(z)
         return samples
 
-    def generate(self, x: Tensor, **kwargs) -> Tensor:
+    def generate(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
         """
         Given an input image x, returns the reconstructed image
-        :param x: (Tensor) [B x C x H x W]
-        :return: (Tensor) [B x C x H x W]
+        :param x: (torch.Tensor) [B x C x H x W]
+        :return: (torch.Tensor) [B x C x H x W]
         """
 
         return self.forward(x)[0]

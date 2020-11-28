@@ -3,7 +3,7 @@ from torch import nn
 from torch.nn import functional as F
 
 from .base import BaseVAE
-from .types_ import *
+from typing import Optional, List
 
 
 class FactorVAE(BaseVAE):
@@ -114,12 +114,12 @@ class FactorVAE(BaseVAE):
             submodel_gamma_scheduler=discriminator_gamma_scheduler,
         )
 
-    def encode(self, input: Tensor) -> List[Tensor]:
+    def encode(self, input: torch.Tensor) -> List[torch.Tensor]:
         """
         Encodes the input by passing through the encoder network
         and returns the latent codes.
-        :param input: (Tensor) Input tensor to encoder [N x C x H x W]
-        :return: (Tensor) List of latent codes
+        :param input: (torch.Tensor) Input tensor to encoder [N x C x H x W]
+        :return: (torch.Tensor) List of latent codes
         """
         result = self.encoder(input)
         result = torch.flatten(result, start_dim=1)
@@ -131,12 +131,12 @@ class FactorVAE(BaseVAE):
 
         return [mu, log_var]
 
-    def decode(self, z: Tensor) -> Tensor:
+    def decode(self, z: torch.Tensor) -> torch.Tensor:
         """
         Maps the given latent codes
         onto the image space.
-        :param z: (Tensor) [B x D]
-        :return: (Tensor) [B x C x H x W]
+        :param z: (torch.Tensor) [B x D]
+        :return: (torch.Tensor) [B x C x H x W]
         """
         result = self.decoder_input(z)
         result = result.view(-1, 512, 2, 2)
@@ -144,24 +144,24 @@ class FactorVAE(BaseVAE):
         result = self.final_layer(result)
         return result
 
-    def reparameterize(self, mu: Tensor, logvar: Tensor) -> Tensor:
+    def reparameterize(self, mu: torch.Tensor, logvar: torch.Tensor) -> torch.Tensor:
         """
         Reparameterization trick to sample from N(mu, var) from
         N(0,1).
-        :param mu: (Tensor) Mean of the latent Gaussian [B x D]
-        :param logvar: (Tensor) Standard deviation of the latent Gaussian [B x D]
-        :return: (Tensor) [B x D]
+        :param mu: (torch.Tensor) Mean of the latent Gaussian [B x D]
+        :param logvar: (torch.Tensor) Standard deviation of the latent Gaussian [B x D]
+        :return: (torch.Tensor) [B x D]
         """
         std = torch.exp(0.5 * logvar)
         eps = torch.randn_like(std)
         return eps * std + mu
 
-    def forward(self, input: Tensor, **kwargs) -> List[Tensor]:
+    def forward(self, input: torch.Tensor, **kwargs) -> List[torch.Tensor]:
         mu, log_var = self.encode(input)
         z = self.reparameterize(mu, log_var)
         return [self.decode(z), input, mu, log_var, z]
 
-    def permute_latent(self, z: Tensor) -> Tensor:
+    def permute_latent(self, z: torch.Tensor) -> torch.Tensor:
         """
         Permutes each of the latent codes in the batch
         :param z: [B x D]
@@ -230,13 +230,13 @@ class FactorVAE(BaseVAE):
             # print(f'D_TC: {D_tc_loss}')
             return {"loss": D_tc_loss, "D_TC_Loss": D_tc_loss}
 
-    def sample(self, num_samples: int, current_device: int, **kwargs) -> Tensor:
+    def sample(self, num_samples: int, current_device: int, **kwargs) -> torch.Tensor:
         """
         Samples from the latent space and return the corresponding
         image space map.
         :param num_samples: (Int) Number of samples
         :param current_device: (Int) Device to run the model
-        :return: (Tensor)
+        :return: (torch.Tensor)
         """
         z = torch.randn(num_samples, self.latent_dim)
 
@@ -245,11 +245,11 @@ class FactorVAE(BaseVAE):
         samples = self.decode(z)
         return samples
 
-    def generate(self, x: Tensor, **kwargs) -> Tensor:
+    def generate(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
         """
         Given an input image x, returns the reconstructed image
-        :param x: (Tensor) [B x C x H x W]
-        :return: (Tensor) [B x C x H x W]
+        :param x: (torch.Tensor) [B x C x H x W]
+        :return: (torch.Tensor) [B x C x H x W]
         """
 
         return self.forward(x)[0]
