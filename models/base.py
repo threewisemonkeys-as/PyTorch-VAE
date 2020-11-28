@@ -15,7 +15,7 @@ class BaseVAE(pl.LightningModule):
     def decode(self, input: torch.Tensor) -> Any:
         raise NotImplementedError
 
-    def sample(self, batch_size:int, current_device: int, **kwargs) -> torch.Tensor:
+    def sample(self, batch_size: int, current_device: int, **kwargs) -> torch.Tensor:
         raise RuntimeWarning()
 
     def generate(self, x: torch.Tensor, **kwargs) -> torch.Tensor:
@@ -30,12 +30,9 @@ class BaseVAE(pl.LightningModule):
         pass
 
     def training_step(self, batch, batch_idx, optimizer_idx = 0):
-        batch_size = batch.shape[0]
-        real_img, labels = batch
-
-        results = self.forward(real_img, labels = labels)
+        results = self.forward(input=batch[0], labels=batch[1])
         train_loss = self.model.loss_function(*results,
-                                              M_N = batch_size / self.num_train_imgs,
+                                              M_N = batch.shape[0] / self.num_train_imgs,
                                               optimizer_idx=optimizer_idx,
                                               batch_idx = batch_idx)
 
@@ -45,14 +42,10 @@ class BaseVAE(pl.LightningModule):
         return train_loss
 
     def validation_step(self, batch, batch_idx, optimizer_idx = 0):
-        batch_size = batch.shape[0]
-        real_img, labels = batch
-
-        results = self.forward(real_img, labels = labels)
+        results = self.forward(input=batch[0], labels=batch[1])
         val_loss = self.model.loss_function(*results,
-                                            M_N = batch_size / self.num_val_imgs,
+                                            M_N = batch.shape[0] / self.num_val_imgs,
                                             optimizer_idx = optimizer_idx,
                                             batch_idx = batch_idx)
 
         return val_loss
-
