@@ -38,6 +38,9 @@ class BaseVAE(pl.LightningModule):
             "submodel_scheduler_gamma": submodel_scheduler_gamma,
         }
 
+        self.train_size = None
+        self.val_size = None
+
     def encode(self, input: torch.Tensor) -> List[torch.Tensor]:
         raise NotImplementedError
 
@@ -59,10 +62,11 @@ class BaseVAE(pl.LightningModule):
         pass
 
     def training_step(self, batch, batch_idx, optimizer_idx=0):
-        results = self.forward(input=batch[0], labels=batch[1])
+        results = self.forward(input=batch)
+        train_size = batch.shape[0] if self.train_size is None else self.train_size
         train_loss = self.loss_function(
             *results,
-            M_N=batch.shape[0] / self.num_train_imgs,
+            M_N=batch.shape[0] / train_size,
             optimizer_idx=optimizer_idx,
             batch_idx=batch_idx,
         )
@@ -73,10 +77,11 @@ class BaseVAE(pl.LightningModule):
         return train_loss
 
     def validation_step(self, batch, batch_idx, optimizer_idx=0):
-        results = self.forward(input=batch[0], labels=batch[1])
+        results = self.forward(input=batch)
+        val_size = batch.shape[0] if self.val_size is None else self.val_size
         val_loss = self.loss_function(
             *results,
-            M_N=batch.shape[0] / self.num_val_imgs,
+            M_N=batch.shape[0] / val_size,
             optimizer_idx=optimizer_idx,
             batch_idx=batch_idx,
         )
