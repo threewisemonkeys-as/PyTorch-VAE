@@ -1,17 +1,17 @@
-import torch
 import unittest
+
+import torch
 from models import MSSIMVAE
 from torchsummary import summary
 
 
 class TestMSSIMVAE(unittest.TestCase):
-
     def setUp(self) -> None:
         # self.model2 = VAE(3, 10)
         self.model = MSSIMVAE(3, 10)
 
     def test_summary(self):
-        print(summary(self.model, (3, 64, 64), device='cpu'))
+        print(summary(self.model, (3, 64, 64), device="cpu"))
 
         # print(summary(self.model2, (3, 64, 64), device='cpu'))
 
@@ -26,7 +26,7 @@ class TestMSSIMVAE(unittest.TestCase):
         x = torch.randn(16, 3, 64, 64)
 
         result = self.model(x)
-        loss = self.model.loss_function(*result, M_N = 0.005)
+        loss = self.model.loss_function(*result, M_N=0.005)
         print(loss)
 
     def test_sample(self):
@@ -34,7 +34,5 @@ class TestMSSIMVAE(unittest.TestCase):
         y = self.model.sample(144, 0)
 
 
-
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
